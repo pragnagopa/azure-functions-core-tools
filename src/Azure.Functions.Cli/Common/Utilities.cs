@@ -102,7 +102,7 @@ namespace Azure.Functions.Cli
                 Match match = Regex.Match(sanitizedString, removeRegex);
                 string matchString;
                 // Keep removing the matching regex until no more match is found
-                while(!string.IsNullOrEmpty(matchString = match.Value))
+                while (!string.IsNullOrEmpty(matchString = match.Value))
                 {
                     sanitizedString = sanitizedString.Replace(matchString, new string(fillerChar, matchString.Length));
                     match = Regex.Match(sanitizedString, removeRegex);
@@ -175,18 +175,21 @@ namespace Azure.Functions.Cli
             return localPath;
         }
 
-        internal static LogLevel GetHostJsonDefaultLogLevel()
+        internal static LogLevel GetHostJsonDefaultLogLevel(string hostJsonFileContent)
         {
+            var hostJson = JsonConvert.DeserializeObject<JObject>(hostJsonFileContent.ToLower());
             try
             {
-                var hostJson = JsonConvert.DeserializeObject<JObject>(FileSystemHelpers.ReadAllTextFromFile("host.json"));
-                return (LogLevel)Enum.Parse(typeof(LogLevel), hostJson["Logging"]["LogLevel"]["Default"].ToString());
+                if (Enum.TryParse(typeof(LogLevel), hostJson["logging"]["loglevel"]["default"].ToString(), true, out object outLevel))
+                {
+                    return (LogLevel)outLevel;
+                }
             }
-            catch (Exception)
+            catch
             {
-                // Default log level
-                return LogLevel.Information;
             }
+            // Default log level
+            return LogLevel.Information;
         }
     }
 }

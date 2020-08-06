@@ -37,7 +37,7 @@ namespace Azure.Functions.Cli.Actions.HostActions
         private const int DefaultPort = 7071;
         private const int DefaultTimeout = 20;
         private readonly ISecretsManager _secretsManager;
-        private readonly LogLevel _hostJsonDefaulLogLevel = LogLevel.Information;
+        private readonly LogLevel _hostJsonDefaultLogLevel = LogLevel.Information;
 
         public int Port { get; set; }
 
@@ -63,7 +63,13 @@ namespace Azure.Functions.Cli.Actions.HostActions
         public StartHostAction(ISecretsManager secretsManager)
         {
             _secretsManager = secretsManager;
-            _hostJsonDefaulLogLevel = Utilities.GetHostJsonDefaultLogLevel();
+            try
+            {
+                _hostJsonDefaultLogLevel = Utilities.GetHostJsonDefaultLogLevel(FileSystemHelpers.ReadAllTextFromFile("host.json"));
+            }
+            catch
+            {
+            }
         }
 
         public override ICommandLineParserResult ParseArgs(string[] args)
@@ -164,14 +170,14 @@ namespace Azure.Functions.Cli.Actions.HostActions
                 })
                 .ConfigureLogging(loggingBuilder =>
                 {
-                    if (_hostJsonDefaulLogLevel != LogLevel.None)
+                    loggingBuilder.ClearProviders();
+                    if (_hostJsonDefaultLogLevel != LogLevel.None)
                     {
-                        loggingBuilder.ClearProviders();
                         loggingBuilder.AddDefaultWebJobsFilters();
                         loggingBuilder.AddProvider(new ColoredConsoleLoggerProvider((cat, level) => level >= LogLevel.Information));
                     }
                 })
-                .ConfigureServices((context, services) => services.AddSingleton<IStartup>(new Startup(context, hostOptions, CorsOrigins, CorsCredentials, EnableAuth, _hostJsonDefaulLogLevel)))
+                .ConfigureServices((context, services) => services.AddSingleton<IStartup>(new Startup(context, hostOptions, CorsOrigins, CorsCredentials, EnableAuth, _hostJsonDefaultLogLevel)))
                 .Build();
         }
 
